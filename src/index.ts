@@ -1,5 +1,5 @@
 import { getInput, error, warning, info, debug, setOutput } from '@actions/core';
-import { exec, execSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import ms from 'milliseconds';
 import kill from 'tree-kill';
 
@@ -47,7 +47,7 @@ function getInputNumber(id: string, required: boolean): number | undefined {
 function getInputBoolean(id: string): Boolean {
   const input = getInput(id);
 
-  if (!['true','false'].includes(input.toLowerCase())) {
+  if (!['true', 'false'].includes(input.toLowerCase())) {
     throw `Input ${id} only accepts boolean values.  Received ${input}`;
   }
   return input.toLowerCase() === 'true'
@@ -118,7 +118,7 @@ async function runRetryCmd(): Promise<void> {
   }
 
   try {
-    await execSync(ON_RETRY_COMMAND, { stdio: 'inherit' });
+    spawnSync(ON_RETRY_COMMAND, { stdio: 'inherit' });
   } catch (error) {
     info(`WARNING: Retry command threw the error ${error.message}`)
   }
@@ -133,8 +133,8 @@ async function runCmd(attempt: number) {
 
   debug(`Running command ${COMMAND} on ${OS} using shell ${executable}`)
   var child = attempt > 1 && NEW_COMMAND_ON_RETRY
-      ? exec(NEW_COMMAND_ON_RETRY, { 'shell': executable })
-      : exec(COMMAND, { 'shell': executable });
+    ? spawn(NEW_COMMAND_ON_RETRY, { 'shell': executable })
+    : spawn(COMMAND, { 'shell': executable });
 
   child.stdout?.on('data', (data) => {
     process.stdout.write(data);
@@ -188,7 +188,7 @@ async function runAction() {
       } else if (!done && RETRY_ON === 'error') {
         // error: timeout
         throw error;
-      } else if (RETRY_ON_EXIT_CODE && RETRY_ON_EXIT_CODE !== exit){
+      } else if (RETRY_ON_EXIT_CODE && RETRY_ON_EXIT_CODE !== exit) {
         throw error;
       } else if (exit > 0 && RETRY_ON === 'timeout') {
         // error: error

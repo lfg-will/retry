@@ -741,27 +741,18 @@ function getExecutable() {
 }
 function runRetryCmd() {
     return __awaiter(this, void 0, void 0, function () {
-        var error_1;
         return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    // if no retry script, just continue
-                    if (!ON_RETRY_COMMAND) {
-                        return [2 /*return*/];
-                    }
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, child_process_1.execSync(ON_RETRY_COMMAND, { stdio: 'inherit' })];
-                case 2:
-                    _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    error_1 = _a.sent();
-                    core_1.info("WARNING: Retry command threw the error " + error_1.message);
-                    return [3 /*break*/, 4];
-                case 4: return [2 /*return*/];
+            // if no retry script, just continue
+            if (!ON_RETRY_COMMAND) {
+                return [2 /*return*/];
             }
+            try {
+                child_process_1.spawnSync(ON_RETRY_COMMAND, { stdio: 'inherit' });
+            }
+            catch (error) {
+                core_1.info("WARNING: Retry command threw the error " + error.message);
+            }
+            return [2 /*return*/];
         });
     });
 }
@@ -778,8 +769,8 @@ function runCmd(attempt) {
                     done = false;
                     core_1.debug("Running command " + COMMAND + " on " + OS + " using shell " + executable);
                     child = attempt > 1 && NEW_COMMAND_ON_RETRY
-                        ? child_process_1.exec(NEW_COMMAND_ON_RETRY, { 'shell': executable })
-                        : child_process_1.exec(COMMAND, { 'shell': executable });
+                        ? child_process_1.spawn(NEW_COMMAND_ON_RETRY, { 'shell': executable })
+                        : child_process_1.spawn(COMMAND, { 'shell': executable });
                     (_a = child.stdout) === null || _a === void 0 ? void 0 : _a.on('data', function (data) {
                         process.stdout.write(data);
                     });
@@ -826,7 +817,7 @@ function runCmd(attempt) {
 }
 function runAction() {
     return __awaiter(this, void 0, void 0, function () {
-        var attempt, error_2;
+        var attempt, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, validateInputs()];
@@ -847,28 +838,28 @@ function runAction() {
                     core_1.info("Command completed after " + attempt + " attempt(s).");
                     return [3 /*break*/, 13];
                 case 5:
-                    error_2 = _a.sent();
+                    error_1 = _a.sent();
                     if (!(attempt === MAX_ATTEMPTS)) return [3 /*break*/, 6];
-                    throw new Error("Final attempt failed. " + error_2.message);
+                    throw new Error("Final attempt failed. " + error_1.message);
                 case 6:
                     if (!(!done && RETRY_ON === 'error')) return [3 /*break*/, 7];
                     // error: timeout
-                    throw error_2;
+                    throw error_1;
                 case 7:
                     if (!(RETRY_ON_EXIT_CODE && RETRY_ON_EXIT_CODE !== exit)) return [3 /*break*/, 8];
-                    throw error_2;
+                    throw error_1;
                 case 8:
                     if (!(exit > 0 && RETRY_ON === 'timeout')) return [3 /*break*/, 9];
                     // error: error
-                    throw error_2;
+                    throw error_1;
                 case 9: return [4 /*yield*/, runRetryCmd()];
                 case 10:
                     _a.sent();
                     if (WARNING_ON_RETRY) {
-                        core_1.warning("Attempt " + attempt + " failed. Reason: " + error_2.message);
+                        core_1.warning("Attempt " + attempt + " failed. Reason: " + error_1.message);
                     }
                     else {
-                        core_1.info("Attempt " + attempt + " failed. Reason: " + error_2.message);
+                        core_1.info("Attempt " + attempt + " failed. Reason: " + error_1.message);
                     }
                     _a.label = 11;
                 case 11: return [3 /*break*/, 12];
